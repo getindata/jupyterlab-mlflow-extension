@@ -1,0 +1,6 @@
+docker
+gitpython
+pandas
+sklearn
+google-cloud-storage
+mlflow
