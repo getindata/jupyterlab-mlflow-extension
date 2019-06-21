@@ -8,6 +8,11 @@ export interface IGitCloneResult {
     stderr: string;
 }
 
+export interface ILabResult{
+    status: boolean;
+    stdout: string;
+    stderr: string;}
+
 export interface IKerberosAuthParams {
     password: string;
 }
@@ -48,6 +53,14 @@ export class HttpClient {
 
     async configureGitRepo(params: string): Promise<IGitCloneResult> {
       return await this._make_request('/mlflow/gitclone', 'POST', { "git_repo_params": params})
+    }
+
+    async configureModelBuild(params: string): Promise<ILabResult> {
+      return await this._make_request('/mlflow/build', 'POST',  { "build_params": params})
+    }
+
+    async configureModelServe(params: string): Promise<ILabResult> {
+      return await this._make_request('/mlflow/serve', 'POST',  { "serve_params": params})
     }
 
 }

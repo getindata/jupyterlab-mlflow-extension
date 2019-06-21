@@ -5,11 +5,14 @@ import mlflow
 
 from git import Repo
 import json
+import requests
 
-def getGitRepo():
+
+global_base_url = ""
+def getGitRepo(modelName: str):
     import os
     cwd = os.getcwd()
-    git_repo = Repo(cwd)
+    git_repo = Repo("%s/%s" % (cwd, modelName ) )
     return git_repo
 
 def pullRepo(repo: Repo):
@@ -24,23 +27,24 @@ def getProjectName(repo: Repo):
     return project_name
 
 class MLFlowModelServeHandler(IPythonHandler):
-    def get(self):
-        print(self.base_url)
+    def post(self):
         client = docker.from_env()
-        client.containers.get()
-        git_repo = getGitRepo()
-        project_name = getProjectName(git_repo)
+        params = json.loads(self.request.body.decode('utf-8'))
+        image = params['serve_params'].split('|')[0]
+        port = params['serve_params'].split('|')[1]
 
-        container = client.containers.run("getindata/%s" %(project_name),name="", detach = True,)
+        container = client.containers.run("%s" %(image),name="getin", detach = True, ports = {'5001/tcp': port} )
         self.finish( )
 
 class MLFlowModelBuildHandler(IPythonHandler):
-    def get(self):
-        git_repo = getGitRepo()
+    def post(self):
+        params = json.loads(self.request.body.decode('utf-8'))
+        model_name = params['build_params']
+        git_repo = getGitRepo(model_name)
         pullRepo(git_repo)
         project_name = getProjectName(git_repo)
         import subprocess
-        process_run = mlflow.projects.run(".")
+        process_run = mlflow.projects.run("%s/." % (model_name))
         process_run.wait()
         process_id = process_run.run_id
         process_build = subprocess.Popen("mlflow models build-docker -m  mlruns/0/%s/artifacts/model_wine/ -n getindata/%s:%s" % (process_id,project_name,process_id), shell=True, stdout=subprocess.PIPE)
@@ -79,6 +83,8 @@ def load_extension(nb_server_app):
     web_app = nb_server_app.web_app
     host_pattern = '.*$'
     base_url = web_app.settings['base_url']
+    global_base_url = nb_server_app.connection_url
+    print(global_base_url)
     # route_pattern = url_path_join(web_app.settings['base_url'], '/mlflow/serve')
 
     handlers = [(url_path_join(base_url, handler[0]), handler[1]) for handler in mlflowHandlers]

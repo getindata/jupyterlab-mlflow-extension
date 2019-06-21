@@ -102,3 +102,39 @@ namespace Private {
       return this.gitURL.getValue() + "|" + this.localDir.getValue()
     }
   }
+
+  export class ProjectPromptForm extends Widget {
+
+    private readonly modelName: FormField;
+
+    constructor(warnText?: string) {
+      const modelName = new FormField('Model ', 'Name', warnText);
+      super({ node: Private.createContainer([modelName.node ])})
+      this.modelName = modelName;
+    }
+
+    getValue(): string {
+      return this.modelName.getValue()
+    }
+  }
+
+  export class ModelPromptForm extends Widget {
+
+    private readonly modelName: FormField;
+    private readonly port: FormField;
+
+    constructor(warnText?: string) {
+      const modelName = new FormField('Model ', 'Name', warnText);
+      const port = new FormField('Port ', 'Name', warnText);
+      super({ node: Private.createContainer([modelName.node, port.node ])})
+      this.modelName = modelName;
+      this.port = port;
+
+    }
+
+    getValue(): string {
+      return this.modelName.getValue() + "|" + this.port.getValue()
+    }
+  }
+
+

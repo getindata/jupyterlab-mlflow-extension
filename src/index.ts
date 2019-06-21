@@ -12,14 +12,17 @@ import '../style/index.css';
 
 
 import { Dialog, showDialog } from '@jupyterlab/apputils';
-import { GitClonePromptForm } from './git_clone_prompt_form';
+import { GitClonePromptForm } from './forms';
+import { ModelPromptForm } from './forms';
+import { ProjectPromptForm } from './forms';
+
 import { HttpClient } from './http_client';
 
 
 const http_client = new HttpClient();
 const GIT_REPO = 'gitRepo';
 
-function dialog(warnText? :string) {
+function dialogClone(warnText? :string) {
   showDialog({
     title: 'Configure git repo',
     body: new GitClonePromptForm(warnText),
@@ -34,12 +37,59 @@ function dialog(warnText? :string) {
     }
   }).then(IGitCloneResult => {
       if (IGitCloneResult && !IGitCloneResult.status) {
-        dialog(IGitCloneResult.stderr);
+        dialogClone(IGitCloneResult.stderr);
       }
   }).catch(e => {
     console.error("an error occured", e);
   })
 }
+
+
+function dialogBuild(warnText? :string) {
+  showDialog({
+    title: 'Project to build',
+    body: new ProjectPromptForm(warnText),
+    buttons: [
+      Dialog.cancelButton({label: 'Skip'}),
+      Dialog.okButton({label: "Submit", className: GIT_REPO}),
+    ]
+  }).then(result => {
+    if (result.button.className == GIT_REPO) {
+      console.log("Got repo result:", result.value);
+      return http_client.configureModelBuild(result.value)
+    }
+  }).then(ILabResult => {
+      if (ILabResult && !ILabResult.status) {
+        dialogBuild(ILabResult.stderr);
+      }
+  }).catch(e => {
+    console.error("an error occured", e);
+  })
+}
+
+
+function dialogServe(warnText? :string) {
+  showDialog({
+    title: 'Model to serve',
+    body: new ModelPromptForm(warnText),
+    buttons: [
+      Dialog.cancelButton({label: 'Skip'}),
+      Dialog.okButton({label: "Submit", className: GIT_REPO}),
+    ]
+  }).then(result => {
+    if (result.button.className == GIT_REPO) {
+      console.log("Got repo result:", result.value);
+      return http_client.configureModelServe(result.value)
+    }
+  }).then(ILabResult => {
+      if (ILabResult && !ILabResult.status) {
+        dialogBuild(ILabResult.stderr);
+      }
+  }).catch(e => {
+    console.error("an error occured", e);
+  })
+}
+
 
 
 
@@ -61,25 +111,25 @@ export const BookMarks = [
         name: 'MLFlow Tracking UI',
         url: 'http://gid-mlflow.appspot.com',
         description: 'MLFlow Tracking UI',
-        target: 'git_clone'
+        target: 'widget'
     },
     {
         name: 'Clone model',
         url: '/mlflow/gitclone',
         description: 'MLFlow clone model',
-        target: 'command'
+        target: 'gitclone'
     },
     {
         name: 'Build model',
         url: '/mlflow/build',
         description: 'MLFlow build model',
-        target: 'widget'
+        target: 'buildmodel'
     },
     {
         name: 'Serve model',
         url: '/mlflow/serve',
         description: 'MLFlow serve model',
-        target: 'widget'
+        target: 'servemodel'
     },
      {
         name: 'Test model',
@@ -107,8 +157,14 @@ export function activate_custom_menu(app: JupyterLab, mainMenu: IMainMenu, palet
                     win.focus();
 
                 }
-                else if (item.target == 'command'){
-                dialog()
+                else if (item.target == 'gitclone'){
+                  dialogClone()
+                }
+                else if (item.target == 'buildmodel'){
+                  dialogBuild()
+                }
+                else if (item.target == 'servemodel'){
+                  dialogServe()
                 }
                 else if (item.target == 'widget') {
                     if (!iframe) {
