@@ -55,6 +55,10 @@ export class HttpClient {
       return await this._make_request('/mlflow/gitclone', 'POST', { "git_repo_params": params})
     }
 
+    async configureModelRun(params: string): Promise<ILabResult> {
+      return await this._make_request('/mlflow/run', 'POST',  { "run_params": params})
+    }
+
     async configureModelBuild(params: string): Promise<ILabResult> {
       return await this._make_request('/mlflow/build', 'POST',  { "build_params": params})
     }

@@ -59,20 +59,42 @@ class MLFlowModelServeHandler(IPythonHandler):
         print("Serving image %s as % at port %s" % (image, container_name, port))
         self.finish("Serving image %s as % at port %s" % (image, container_name, port) )
 
+
+class MLFlowModelRunHandler(IPythonHandler):
+    def post(self):
+        params = json.loads(self.request.body.decode('utf-8'))
+        model_name = params['run_params']
+        git_repo = getGitRepo(model_name)
+        # pullRepo(git_repo)
+        project_name = getProjectName(git_repo)
+
+        import subprocess
+        mlflow.set_tracking_uri('https://gid-mlflow.appspot.com')
+        print("%s/%s" % (project_name,git_repo.active_branch))
+        try:
+            mlflow.create_experiment("%s/%s" % (project_name,git_repo.active_branch))
+        except:
+            pass
+        process_run = mlflow.projects.run(uri="%s/." % (model_name),experiment_name = "%s/%s" % (project_name,git_repo.active_branch))
+        process_run.wait()
+        process_id = process_run.run_id
+        self.finish(process_run.run_id)
+
+
 class MLFlowModelBuildHandler(IPythonHandler):
     def post(self):
         params = json.loads(self.request.body.decode('utf-8'))
         model_name = params['build_params']
         git_repo = getGitRepo(model_name)
-        pullRepo(git_repo)
+        # pullRepo(git_repo)
         project_name = getProjectName(git_repo)
         import subprocess
+        # mlflow.set_tracking_uri('https://gid-mlflow.appspot.com')
         process_run = mlflow.projects.run("%s/." % (model_name))
         process_run.wait()
         process_id = process_run.run_id
         process_build = subprocess.Popen("mlflow models build-docker -m  mlruns/0/%s/artifacts/model/ -n getindata/%s:%s" % (process_id,project_name,process_id), shell=True, stdout=subprocess.PIPE)
-        process_build.wait()
-
+        # process_build.wait()
         self.finish("Docker build image getindata/%s:%s finished with %s code" %(project_name,process_id,process_build.returncode))
 
 class MLFlowModelTestHandler(IPythonHandler):
@@ -115,6 +137,7 @@ def load_extension(nb_server_app):
 
     mlflowHandlers = [
         ("/mlflow/serve", MLFlowModelServeHandler),
+        ("/mlflow/run", MLFlowModelRunHandler),
         ("/mlflow/build", MLFlowModelBuildHandler),
         ("/mlflow/test", MLFlowModelTestHandler),
         ("/mlflow/gitclone", MLFlowGitCloneHandler)

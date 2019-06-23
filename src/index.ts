@@ -45,6 +45,30 @@ function dialogClone(warnText? :string) {
 }
 
 
+function dialogRun(warnText? :string) {
+  showDialog({
+    title: 'Project to run',
+    body: new ProjectPromptForm(warnText),
+    buttons: [
+      Dialog.cancelButton({label: 'Skip'}),
+      Dialog.okButton({label: "Submit", className: GIT_REPO}),
+    ]
+  }).then(result => {
+    if (result.button.className == GIT_REPO) {
+      console.log("Got repo result:", result.value);
+      return http_client.configureModelRun(result.value)
+    }
+  }).then(ILabResult => {
+      if (ILabResult && !ILabResult.status) {
+        dialogRun(ILabResult.stderr);
+      }
+  }).catch(e => {
+    console.error("an error occured", e);
+  })
+}
+
+
+
 function dialogBuild(warnText? :string) {
   showDialog({
     title: 'Project to build',
@@ -139,6 +163,12 @@ export const BookMarks = [
         description: 'MLFlow clone model',
         target: 'gitclone'
     },
+   {
+        name: 'Run model',
+        url: '/mlflow/run',
+        description: 'MLFlow run model',
+        target: 'runmodel'
+    },
     {
         name: 'Build model',
         url: '/mlflow/build',
@@ -179,6 +209,9 @@ export function activate_custom_menu(app: JupyterLab, mainMenu: IMainMenu, palet
                 }
                 else if (item.target == 'gitclone'){
                   dialogClone()
+                }
+                else if (item.target == 'runmodel'){
+                  dialogRun()
                 }
                 else if (item.target == 'buildmodel'){
                   dialogBuild()
