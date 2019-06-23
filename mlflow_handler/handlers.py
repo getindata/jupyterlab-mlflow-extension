@@ -2,11 +2,12 @@ from notebook.utils import url_path_join
 from notebook.base.handlers import IPythonHandler
 import docker
 import mlflow
+import logging
 
 from git import Repo
 import json
 import requests
-
+import  docker.errors
 
 global_base_url = ""
 def getGitRepo(modelName: str):
@@ -27,14 +28,33 @@ def getProjectName(repo: Repo):
     return project_name
 
 class MLFlowModelServeHandler(IPythonHandler):
+
+
     def post(self):
+        log = logging.getLoggerClass()
         client = docker.from_env()
         params = json.loads(self.request.body.decode('utf-8'))
         image = params['serve_params'].split('|')[0]
         port = params['serve_params'].split('|')[1]
-
-        container = client.containers.run("%s" %(image),name="getin", detach = True, ports = {'5001/tcp': port} )
-        self.finish( )
+        container_name = "getin-model"
+        try:
+            container = client.containers.get(container_name)
+            container.stop()
+            container.remove()
+        except :
+            print("Container %s does not exist" % (container_name) )
+        try:
+            container = client.containers.run("%s" %(image),name=container_name, detach = True, ports = {'5001/tcp': port} )
+        except docker.errors.ImageNotFound as e:
+            print(e.explanation)
+            self.finish(e.explanation)
+        except docker.errors.APIError as e:
+            print(e.explanation)
+            self.finish(e.explanation)
+        finally:
+            pass
+        print("Serving image %s as % at port %s" % (image, container_name, port))
+        self.finish("Serving image %s as % at port %s" % (image, container_name, port) )
 
 class MLFlowModelBuildHandler(IPythonHandler):
     def post(self):
