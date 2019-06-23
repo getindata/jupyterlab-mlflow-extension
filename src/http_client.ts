@@ -63,4 +63,8 @@ export class HttpClient {
       return await this._make_request('/mlflow/serve', 'POST',  { "serve_params": params})
     }
 
+    async configureModelTest(params: string): Promise<ILabResult> {
+      return await this._make_request('/mlflow/test', 'POST',  { "test_params": params})
+    }
+
 }

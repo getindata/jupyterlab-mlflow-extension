@@ -90,7 +90,27 @@ function dialogServe(warnText? :string) {
   })
 }
 
-
+function dialogTest(warnText? :string) {
+  showDialog({
+    title: 'Container to test',
+    body: new ProjectPromptForm(warnText),
+    buttons: [
+      Dialog.cancelButton({label: 'Skip'}),
+      Dialog.okButton({label: "Submit", className: GIT_REPO}),
+    ]
+  }).then(result => {
+    if (result.button.className == GIT_REPO) {
+      console.log("Got repo result:", result.value);
+      return http_client.configureModelTest(result.value)
+    }
+  }).then(ILabResult => {
+      if (ILabResult && !ILabResult.status) {
+        dialogTest(ILabResult.stderr);
+      }
+  }).catch(e => {
+    console.error("an error occured", e);
+  })
+}
 
 
 /**
@@ -135,7 +155,7 @@ export const BookMarks = [
         name: 'Test model',
         url: '/mlflow/test',
         description: 'MLFlow test model',
-        target: 'widget'
+        target: 'testmodel'
     }
 
 ];
@@ -165,8 +185,9 @@ export function activate_custom_menu(app: JupyterLab, mainMenu: IMainMenu, palet
                 }
                 else if (item.target == 'servemodel'){
                   dialogServe()
-
-
+                }
+                else if (item.target == 'testmodel'){
+                  dialogTest()
                 }
                 else if (item.target == 'widget') {
                     if (!iframe) {

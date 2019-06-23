@@ -122,18 +122,21 @@ namespace Private {
 
     private readonly modelName: FormField;
     private readonly port: FormField;
+    private readonly containerName: FormField;
 
     constructor(warnText?: string) {
       const modelName = new FormField('Model ', 'Name', warnText);
-      const port = new FormField('Port ', 'Name', warnText);
-      super({ node: Private.createContainer([modelName.node, port.node ])})
+      const port = new FormField('Port ', '9999', warnText);
+      const containerName = new FormField('Container ', 'Name', warnText);
+      super({ node: Private.createContainer([modelName.node, port.node, containerName.node ])})
       this.modelName = modelName;
       this.port = port;
+      this.containerName = containerName;
 
     }
 
     getValue(): string {
-      return this.modelName.getValue() + "|" + this.port.getValue()
+      return this.modelName.getValue() + "|" + this.port.getValue() + "|" + this.containerName.getValue()
     }
   }
 

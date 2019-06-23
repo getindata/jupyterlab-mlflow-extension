@@ -9,6 +9,9 @@ import json
 import requests
 import  docker.errors
 
+import json
+
+
 global_base_url = ""
 def getGitRepo(modelName: str):
     import os
@@ -36,7 +39,7 @@ class MLFlowModelServeHandler(IPythonHandler):
         params = json.loads(self.request.body.decode('utf-8'))
         image = params['serve_params'].split('|')[0]
         port = params['serve_params'].split('|')[1]
-        container_name = "getin-model"
+        container_name = params['serve_params'].split('|')[2]
         try:
             container = client.containers.get(container_name)
             container.stop()
@@ -73,9 +76,23 @@ class MLFlowModelBuildHandler(IPythonHandler):
         self.finish("Docker build image getindata/%s:%s finished with %s code" %(project_name,process_id,process_build.returncode))
 
 class MLFlowModelTestHandler(IPythonHandler):
-    def get(self):
+    def post(self):
+        test_data_file = "test_data.json"
         params = json.loads(self.request.body.decode('utf-8'))
-        model_name = params['test_params']
+        container_name = params['test_params']
+        client = docker.from_env()
+        container = client.containers.get(container_name)
+        # print(container.ports)
+        host_port = container.ports['8080/tcp'][0]['HostPort']
+        # print(host_port)
+        data = {}
+        with open('%s/%s' % (container_name, test_data_file)) as jsonfile:
+            data = json.load(jsonfile)
+        res = requests.post("http://localhost:%s/invocations" % (host_port), json = data)
+        # print(res.status_code)
+        print("Testing container %s running image %s" % (container_name, container.image))
+        print("### Model tested with:\n %s \n and got result \n %s " % (data, res.json()) )
+        self.finish()
 
 
 class MLFlowGitCloneHandler(IPythonHandler):
