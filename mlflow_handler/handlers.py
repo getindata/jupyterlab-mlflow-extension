@@ -44,7 +44,7 @@ class MLFlowModelServeHandler(IPythonHandler):
         except :
             print("Container %s does not exist" % (container_name) )
         try:
-            container = client.containers.run("%s" %(image),name=container_name, detach = True, ports = {'5001/tcp': port} )
+            container = client.containers.run("%s" %(image),name=container_name, detach = True, ports = {'8080/tcp': port} )
         except docker.errors.ImageNotFound as e:
             print(e.explanation)
             self.finish(e.explanation)
@@ -67,14 +67,16 @@ class MLFlowModelBuildHandler(IPythonHandler):
         process_run = mlflow.projects.run("%s/." % (model_name))
         process_run.wait()
         process_id = process_run.run_id
-        process_build = subprocess.Popen("mlflow models build-docker -m  mlruns/0/%s/artifacts/model_wine/ -n getindata/%s:%s" % (process_id,project_name,process_id), shell=True, stdout=subprocess.PIPE)
+        process_build = subprocess.Popen("mlflow models build-docker -m  mlruns/0/%s/artifacts/model/ -n getindata/%s:%s" % (process_id,project_name,process_id), shell=True, stdout=subprocess.PIPE)
         process_build.wait()
 
         self.finish("Docker build image getindata/%s:%s finished with %s code" %(project_name,process_id,process_build.returncode))
 
 class MLFlowModelTestHandler(IPythonHandler):
     def get(self):
-        pass
+        params = json.loads(self.request.body.decode('utf-8'))
+        model_name = params['test_params']
+
 
 class MLFlowGitCloneHandler(IPythonHandler):
     def post(self):

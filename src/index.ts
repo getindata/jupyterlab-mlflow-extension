@@ -83,7 +83,7 @@ function dialogServe(warnText? :string) {
     }
   }).then(ILabResult => {
       if (ILabResult && !ILabResult.status) {
-        dialogBuild(ILabResult.stderr);
+        dialogServe(ILabResult.stderr);
       }
   }).catch(e => {
     console.error("an error occured", e);
@@ -165,6 +165,8 @@ export function activate_custom_menu(app: JupyterLab, mainMenu: IMainMenu, palet
                 }
                 else if (item.target == 'servemodel'){
                   dialogServe()
+
+
                 }
                 else if (item.target == 'widget') {
                     if (!iframe) {
